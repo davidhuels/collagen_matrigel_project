@@ -8,4 +8,4 @@ This repository should contain:
 - scRNAseq analysis
 - bulk RNAseq analysis
 - analysis of embryonic epithelial RNAseq dataset
-- other figures included
+- other figures included in the paper
