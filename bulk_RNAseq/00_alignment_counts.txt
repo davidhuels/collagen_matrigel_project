@@ -1,0 +1,203 @@
+### Analysis of WT intestinal cells (small intestine and colon) on collagen, in matrigel or in collagen (+Wnt3a)
+# library was prepared by core facility as one pool, pool was sequenced on 2 lanescd 
+# received the sequenced data with password from in House facility on Tue 09-03-2020, all unzipped 
+# 46 files R1-R23 with R1 (forward) and R2 (barcode)
+
+# gunzip all files and build proper folder hierarchy
+$ gunzip *.gz
+$ mv David-s1/Overige-s1/* src/
+$ mkdir output_files
+
+# move to working directory!!!
+$ sudo R
+# install.packages("BiocManager")
+# some packages could not be installed, gave permission error despite chmod 777...apparently problem with NFS file systems, using'--no-lock' argument solved it
+# for future, this is how to install problematic packages ... 
+# BiocManager::install(version = "3.10", INSTALL_opts= c('--no-lock'))
+# install.packages("Matrix", dependencies=TRUE, INSTALL_opts = c('--no-lock'))
+# BiocManager::install("RnaSeqGeneEdgeRQL", INSTALL_opts= c('--no-lock'))
+
+### starting with pipeline
+library(RnaSeqGeneEdgeRQL)
+library(Rsubread)
+files<-list.files("src/")
+files_r1<-grep("R1", files, value=TRUE)
+
+# make quality scores for all (forward, R1) files
+for (qs in files_r1){
+	print(qs)
+	QS <- qualityScores(paste0("src/",qs))
+	pdf(file=paste0("plots/qs_", qs, ".pdf"))
+	boxplot(QS, ylab="Quality score", xlab="Base position", 
+	main=qs, cex=0.25, col="orange")
+	dev.off()
+}
+
+
+#alignment
+all.bam <- sub(".fastq", ".bam", files)
+# don't run if previously used...use output files for future...important use this index
+# buildindex(basename = "mm10primary",
+           reference = "~/src/GRCm38.primary_assembly.genome.fa.gz")
+
+
+align(index="~/RNAseq/mm10/mm10primary", readfile1=paste0("src/", files), input_format="FASTQ", 
+      output_file=paste0("bam/", all.bam), nthreads=2)
+propmapped(paste0("bam/",all.bam))
+
+#took only about 15 mins (per sample)
+R
+
+#this takes a while as well...
+propmapped(paste0("bam/",all.bam))3
+
+D1_S1_R1_001.bam  29990788  29105023   0.970465
+D10_S2_R1_001.bam 28130001  27553962   0.979522
+D11_S3_R1_001.bam 33790878  33187448   0.982142
+D12_S4_R1_001.bam 28637866  28083193   0.980631
+D2_S5_R1_001.bam  33633681  33074948   0.983388
+D3_S6_R1_001.bam  27581244  27050612   0.980761
+D4_S7_R1_001.bam  30517384  29847128   0.978037
+D5_S8_R1_001.bam  32315068  31620625   0.978510
+D6_S9_R1_001.bam  30690154  30190216   0.983710
+D7_S10_R1_001.bam 31268754  30644299   0.980029
+D8_S11_R1_001.bam 32390457  31690402   0.978387
+D9_S12_R1_001.bam 31746929  31131338   0.980609
+
+# this takes only a couple of minutes
+fc<-featureCounts(paste0("bam/",all.bam), annot.inbuilt="mm10")
+NCBI RefSeq annotation for mm10 (build 38.1) is used.
+
+        ==========     _____ _    _ ____  _____  ______          _____
+        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \
+          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+       Rsubread 1.34.2
+
+//========================== featureCounts setting ===========================\\
+||                                                                            ||
+||             Input files : 12 BAM files                                     ||
+||                           S D1_S1_R1_001.bam                               ||
+||                           S D10_S2_R1_001.bam                              ||
+||                           S D11_S3_R1_001.bam                              ||
+||                           S D12_S4_R1_001.bam                              ||
+||                           S D2_S5_R1_001.bam                               ||
+||                           S D3_S6_R1_001.bam                               ||
+||                           S D4_S7_R1_001.bam                               ||
+||                           S D5_S8_R1_001.bam                               ||
+||                           S D6_S9_R1_001.bam                               ||
+||                           S D7_S10_R1_001.bam                              ||
+||                           S D8_S11_R1_001.bam                              ||
+||                           S D9_S12_R1_001.bam                              ||
+||                                                                            ||
+||              Annotation : inbuilt (mm10)                                   ||
+||      Dir for temp files : .                                                ||
+||                 Threads : 1                                                ||
+||                   Level : meta-feature level                               ||
+||              Paired-end : no                                               ||
+||      Multimapping reads : counted                                          ||
+|| Multi-overlapping reads : not counted                                      ||
+||   Min overlapping bases : 1                                                ||
+||                                                                            ||
+\\============================================================================//
+
+//================================= Running ==================================\\
+||                                                                            ||
+|| Load annotation file mm10_RefSeq_exon.txt ...                              ||
+||    Features : 222996                                                       ||
+||    Meta-features : 27179                                                   ||
+||    Chromosomes/contigs : 43                                                ||
+||                                                                            ||
+|| Process BAM file D1_S1_R1_001.bam...                                       ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 29990788                                             ||
+||    Successfully assigned alignments : 22318818 (74.4%)                     ||
+||    Running time : 0.63 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D10_S2_R1_001.bam...                                      ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 28130001                                             ||
+||    Successfully assigned alignments : 21230138 (75.5%)                     ||
+||    Running time : 0.60 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D11_S3_R1_001.bam...                                      ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 33790878                                             ||
+||    Successfully assigned alignments : 26209425 (77.6%)                     ||
+||    Running time : 0.72 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D12_S4_R1_001.bam...                                      ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 28637866                                             ||
+||    Successfully assigned alignments : 22166016 (77.4%)                     ||
+||    Running time : 0.61 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D2_S5_R1_001.bam...                                       ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 33633681                                             ||
+||    Successfully assigned alignments : 25744146 (76.5%)                     ||
+||    Running time : 0.72 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D3_S6_R1_001.bam...                                       ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 27581244                                             ||
+||    Successfully assigned alignments : 20807155 (75.4%)                     ||
+||    Running time : 0.58 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D4_S7_R1_001.bam...                                       ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 30517384                                             ||
+||    Successfully assigned alignments : 23658257 (77.5%)                     ||
+||    Running time : 0.65 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D5_S8_R1_001.bam...                                       ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 32315068                                             ||
+||    Successfully assigned alignments : 24348087 (75.3%)                     ||
+||    Running time : 0.68 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D6_S9_R1_001.bam...                                       ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 30690154                                             ||
+||    Successfully assigned alignments : 23637136 (77.0%)                     ||
+||    Running time : 0.65 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D7_S10_R1_001.bam...                                      ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 31268754                                             ||
+||    Successfully assigned alignments : 23634676 (75.6%)                     ||
+||    Running time : 0.67 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D8_S11_R1_001.bam...                                      ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 32390457                                             ||
+||    Successfully assigned alignments : 24521494 (75.7%)                     ||
+||    Running time : 0.70 minutes                                             ||
+||                                                                            ||
+|| Process BAM file D9_S12_R1_001.bam...                                      ||
+||    Single-end reads are included.                                          ||
+||    Assign alignments to features...                                        ||
+||    Total alignments : 31746929                                             ||
+||    Successfully assigned alignments : 24215874 (76.3%)                     ||
+||    Running time : 0.68 minutes                                             ||
+||                                                                            ||
+||                                                                            ||
+\\============================================================================//
+# Save object to a file for later use
+saveRDS(fc, file = "Lgr5Apcinvitro_featurecounts.rds")
+
+# save the counts, these can be fed directly into DESeq2 for example
+write.csv(fc$counts, file="output_files/Lgr5Apc_invitro_counts.csv")
